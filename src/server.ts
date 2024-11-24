@@ -107,7 +107,7 @@ io.on("connection", (socket: Socket) => {
         io.to(roomId).emit("force-disconnect");
         delete rooms[roomId];
       }
-    }, 5000); // 5 second delay before cleanup
+    }, 2000);
   });
 
   socket.on("signal", (data: { roomId: string; signal: any }) => {
