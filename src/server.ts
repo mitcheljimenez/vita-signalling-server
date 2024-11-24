@@ -40,6 +40,7 @@ app.get("/rooms/:roomId", (req, res) => {
 
   res.status(200).json({
     hasSender: !!room?.sender,
+    hasReceiver: !!room?.receiver,
   });
 });
 
