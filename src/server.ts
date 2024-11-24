@@ -1,4 +1,3 @@
-// server.ts
 import express from "express";
 import { createServer } from "http";
 import { Server, Socket } from "socket.io";
@@ -19,10 +18,8 @@ const httpServer = createServer(app);
 app.use(express.json());
 app.use(cors());
 
-// Configure CORS for production
 const io = new Server(httpServer, {
   cors: {
-    // Use environment variable for origin
     origin: process.env.ALLOWED_ORIGINS
       ? process.env.ALLOWED_ORIGINS.split(",")
       : ["http://localhost:3000", "http://localhost:3001"],
@@ -33,7 +30,6 @@ const io = new Server(httpServer, {
 
 const rooms: RoomMap = {};
 
-// Required root path for ELB health checks
 app.get("/", (_, res) => {
   res.status(200).send("WebRTC Signaling Server");
 });
@@ -132,8 +128,7 @@ io.on("connection", (socket: Socket) => {
   });
 });
 
-// Start server
-const PORT = process.env.PORT || 3001; // Change to 8081 for Elastic Beanstalk
+const PORT = process.env.PORT || 8081;
 httpServer.listen(PORT, () => {
   console.log(`WebRTC Signaling Server running on port ${PORT}`);
 });
