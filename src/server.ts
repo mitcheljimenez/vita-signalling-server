@@ -6,6 +6,7 @@ import cors from "cors";
 interface Room {
   sender?: string;
   receiver?: string;
+  filesCompleted?: boolean;
 }
 
 interface RoomMap {
@@ -51,9 +52,6 @@ app.get("/health", (_, res) => {
 
 // Socket.IO connection handling
 io.on("connection", (socket: Socket) => {
-  console.log(`Socket connected: ${socket.id}`);
-
-  // Rest of your socket handling code remains the same
   socket.on(
     "join-room",
     (
@@ -62,7 +60,7 @@ io.on("connection", (socket: Socket) => {
       callback: (success: boolean) => void
     ) => {
       if (!rooms[roomId]) {
-        rooms[roomId] = {};
+        rooms[roomId] = { filesCompleted: false };
       }
 
       const room = rooms[roomId];
@@ -91,9 +89,26 @@ io.on("connection", (socket: Socket) => {
       io.to(roomId).emit("room-update", {
         hasSender: !!room.sender,
         hasReceiver: !!room.receiver,
+        filesCompleted: room.filesCompleted,
       });
     }
   );
+
+  socket.on("files-completed", (roomId: string) => {
+    const room = rooms[roomId];
+    if (!room || socket.id !== room.sender) return;
+
+    room.filesCompleted = true;
+    io.to(roomId).emit("transfer-completed");
+
+    // Schedule room cleanup after a delay
+    setTimeout(() => {
+      if (rooms[roomId]) {
+        io.to(roomId).emit("force-disconnect");
+        delete rooms[roomId];
+      }
+    }, 5000); // 5 second delay before cleanup
+  });
 
   socket.on("signal", (data: { roomId: string; signal: any }) => {
     const room = rooms[data.roomId];
@@ -119,14 +134,8 @@ io.on("connection", (socket: Socket) => {
     if (!room) return;
 
     if (socket.id === room.sender) {
-      if (room.receiver) {
-        io.to(room.receiver).emit("sender-left");
-      }
       room.sender = undefined;
     } else if (socket.id === room.receiver) {
-      if (room.sender) {
-        io.to(room.sender).emit("receiver-left");
-      }
       room.receiver = undefined;
     }
 
@@ -149,11 +158,6 @@ io.on("connection", (socket: Socket) => {
 
       if (!room.sender && !room.receiver) {
         delete rooms[roomId];
-      } else {
-        io.to(roomId).emit("room-update", {
-          hasSender: !!room.sender,
-          hasReceiver: !!room.receiver,
-        });
       }
     }
   });
