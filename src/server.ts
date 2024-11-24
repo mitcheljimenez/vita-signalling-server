@@ -34,6 +34,15 @@ app.get("/", (_, res) => {
   res.status(200).send("WebRTC Signaling Server");
 });
 
+app.get("/rooms/:roomId", (req, res) => {
+  const { roomId } = req.params;
+  const room = rooms[roomId];
+
+  res.status(200).json({
+    hasSender: !!room?.sender,
+  });
+});
+
 // Health check endpoint
 app.get("/health", (_, res) => {
   res.status(200).json({ status: "healthy" });
@@ -41,8 +50,6 @@ app.get("/health", (_, res) => {
 
 // Socket.IO connection handling
 io.on("connection", (socket: Socket) => {
-  console.log(`Client connected: ${socket.id}`);
-
   // Rest of your socket handling code remains the same
   socket.on(
     "join-room",
