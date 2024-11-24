@@ -51,6 +51,8 @@ app.get("/health", (_, res) => {
 
 // Socket.IO connection handling
 io.on("connection", (socket: Socket) => {
+  console.log(`Socket connected: ${socket.id}`);
+
   // Rest of your socket handling code remains the same
   socket.on(
     "join-room",
@@ -109,6 +111,27 @@ io.on("connection", (socket: Socket) => {
 
     if (room.sender) {
       io.to(room.sender).emit("chunk-ack", data.chunkId);
+    }
+  });
+
+  socket.on("leave-room", (roomId: string) => {
+    const room = rooms[roomId];
+    if (!room) return;
+
+    if (socket.id === room.sender) {
+      if (room.receiver) {
+        io.to(room.receiver).emit("sender-left");
+      }
+      room.sender = undefined;
+    } else if (socket.id === room.receiver) {
+      if (room.sender) {
+        io.to(room.sender).emit("receiver-left");
+      }
+      room.receiver = undefined;
+    }
+
+    if (!room.sender && !room.receiver) {
+      delete rooms[roomId];
     }
   });
 
